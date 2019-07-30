@@ -7,6 +7,9 @@ import shutil
 def export(p_source, p_export, p_all_in_one=False):
     path_source = Path(p_source)
     path_export = Path(p_export)
+    if path_source.samefile(path_export):
+        print('源目录和目标输出目录不能相同！')
+        return
     if path_export.exists():
         shutil.rmtree(str(path_export))
     list_file = sorted(path_source.rglob('*.ts'))
