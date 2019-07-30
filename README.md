@@ -2,7 +2,7 @@
 工作脚本
 
 ## FGUICodeTool.py
-把FairyGUI发布的Egret代码文件做二次精简，减少编译代码量
+把FairyGUI发布的Egret代码文件做二次精简，减少编译代码量，主要用途在于微信小游戏压缩代码
 ### 使用方法
 ```cmd
 python FGUICodeTool.py --source xxx --output xxx
