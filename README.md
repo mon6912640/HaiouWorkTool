@@ -3,7 +3,6 @@ Egret+FairyGUI项目相关的工作脚本
 python3.7  
 
 ----
-----
 
 ### FGUICodeTool.py
 把FairyGUI发布的Egret代码文件做二次精简，减少编译代码量，主要用途在于微信小游戏压缩代码
