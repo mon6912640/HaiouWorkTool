@@ -80,7 +80,7 @@ def run(p_fabu_path, p_work_path, p_pkg_list=None):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='帮助信息')
-    parser.add_argument('--source', type=str, default='./fabu', help='fui工程目录')
+    parser.add_argument('--source', type=str, default='./fabu', help='fui工程的发布目录')
     parser.add_argument('--to', type=str, default='./fabu2', help='输出的目录')
     parser.add_argument('--pkg', type=str, default='common,Share', help='指定的包名称列表，用逗号分隔，默认为空则为输出所有包')
     args = parser.parse_args()
