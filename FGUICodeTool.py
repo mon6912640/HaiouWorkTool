@@ -4,16 +4,42 @@ from pathlib import Path
 import shutil
 
 
-def export(p_source, p_export, p_all_in_one=False):
+def export(p_source, p_export, p_pkg_list=None):
     path_source = Path(p_source)
     path_export = Path(p_export)
-    if path_source.samefile(path_export):
+
+    if not path_source.exists():
+        print('源目录不存在，程序退出')
+        return
+    if path_source.absolute() == path_export.absolute():
         print('源目录和目标输出目录不能相同！')
         return
-    if path_export.exists():
-        shutil.rmtree(str(path_export))
+
+    if p_pkg_list is None or len(p_pkg_list) == 0:
+        is_all = True
+        print('本次将输出全部包')
+    else:
+        is_all = False
+        print('本次将输出{0}个包'.format(len(p_pkg_list)), p_pkg_list)
+
+    # 清理输出目录（要区分全部清理还是只清理指定的包）
+    if is_all:
+        if path_export.exists():
+            shutil.rmtree(str(path_export))
+    else:
+        for v in pkg_list:
+            path_pkg_dir = path_export / v
+            if path_pkg_dir.exists():
+                shutil.rmtree(str(path_pkg_dir))
+
+    total_count = 0
+
     list_file = sorted(path_source.rglob('*.ts'))
     for v in list_file:
+        # 包名（所在目录名称）
+        pkg = v.parent.name
+        if not is_all and pkg not in p_pkg_list:
+            continue
         with v.open(encoding='utf-8') as f:
             str_code = f.read()
             if 'Binder.ts' in v.name:
@@ -69,13 +95,28 @@ def export(p_source, p_export, p_all_in_one=False):
             path_target = path_export / v.relative_to(path_source)
             path_target.parent.mkdir(parents=True, exist_ok=True)
             path_target.write_text(output_str, encoding='utf-8')
-    print('输出完毕')
+            total_count += 1
+    print('输出完毕，共处理了{0}个文件'.format(total_count))
 
+
+# 配置
+path_config = Path('./FGUICodeTool_cfg.json')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='帮助信息')
+    parser.add_argument('--type', type=int, default=0, help='运行类型 0：参数运行 1：等待用户输入')
     parser.add_argument('--source', type=str, default='./fabu', help='fui工程目录')
     parser.add_argument('--output', type=str, default='./fabu2', help='输出的目录')
+    parser.add_argument('--pkg', type=str, default='', help='指定的包名称列表，用逗号分隔，默认为空则为输出所有包')
     args = parser.parse_args()
 
-    export(args.source, args.output)
+    pkg_list = []
+    if args.type == 1:  # 等待用户输入
+        input_pkg = input('输入你要发布的包名，多个包可用逗号分隔，不填则为输出所有包:')
+        if input_pkg:
+            pkg_list = input_pkg.split(',')
+    else:  # 参数运行
+        if args.pkg:
+            pkg_list = args.pkg.split(',')
+
+    export(args.source, args.output, pkg_list)

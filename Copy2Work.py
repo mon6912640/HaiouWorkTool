@@ -80,13 +80,20 @@ def run(p_fabu_path, p_work_path, p_pkg_list=None):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='帮助信息')
+    parser.add_argument('--type', type=int, default=0, help='运行类型 0：参数运行 1：等待用户输入')
     parser.add_argument('--source', type=str, default='./fabu', help='fui工程的发布目录')
     parser.add_argument('--to', type=str, default='./fabu2', help='输出的目录')
     parser.add_argument('--pkg', type=str, default='', help='指定的包名称列表，用逗号分隔，默认为空则为输出所有包')
     args = parser.parse_args()
 
     pkg_list = []
-    if args.pkg:
-        pkg_list = args.pkg.split(',')
+    if args.type == 1:  # 等待用户输入
+        input_pkg = input('输入你要发布的包名，多个包可用逗号分隔，不填则为输出所有包:')
+        if input_pkg:
+            pkg_list = input_pkg.split(',')
+            print(input_pkg)
+    else:  # 参数运行
+        if args.pkg:
+            pkg_list = args.pkg.split(',')
 
     run(args.source, args.to, pkg_list)
