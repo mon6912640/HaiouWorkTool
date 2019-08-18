@@ -91,6 +91,7 @@ def replace_code(p_code_path, p_vo_map):
         vo = p_vo_map[url_key]
 
         def rpl_func(m):
+            # TODO 需要分析代码中的commonBinder.ts，把属性的类替换成具体映射的类，避免手动对类定义作二次修改
             result = ''
             for pro_vo in vo.pro_list:
                 result += '\t' + pro_vo.str_match + '\n'
