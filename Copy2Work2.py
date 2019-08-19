@@ -1,6 +1,8 @@
-from pathlib import Path
+import argparse
 import re
+from pathlib import Path
 from xml.etree.ElementTree import parse
+import sys
 
 """
 自动把生成的属性写进代码的脚本
@@ -90,6 +92,11 @@ def run(p_gui, p_code, p_xml, p_pkg_list=None):
 
 
 def load_xml(p_xml):
+    """
+    加载分析xml文件，并返回一个ui组件名称为键，uid为值的map表
+    :param p_xml:
+    :return:
+    """
     path_xml = Path(p_xml)
     uid_map = {}
     for dir in path_xml.iterdir():
@@ -127,13 +134,19 @@ def load_xml(p_xml):
 
 
 def replace_code(p_code_path, p_vo_map):
+    """
+    替换代码中的属性
+    :param p_code_path:
+    :param p_vo_map:
+    :return:
+    """
     path_code = Path(p_code_path)
     uid_cla_map = analyze_common(p_code_path, commonBinder_path)
     list_file = sorted(path_code.rglob('*.ts'))
     count = 0
     for v in list_file:
         str_code = v.read_text(encoding='utf-8')
-        if '//<<<<start' not in str_code or '//>>>>end' not in str_code:
+        if '//>>>>start' not in str_code or '//>>>>end' not in str_code:
             continue
         result = re.search('static URL.+"(ui://\S+)"', string=str_code)
         if result is None:
@@ -155,7 +168,7 @@ def replace_code(p_code_path, p_vo_map):
             result = m.group(1) + '\n' + result + '\t' + m.group(3)
             return result.rstrip('\n')
 
-        output_str = re.sub('(//<<<<start)(.+?)(//>>>>end)', rpl_func, str_code, flags=re.M | re.DOTALL)
+        output_str = re.sub('(//>>>>start)(.+?)(//>>>>end)', rpl_func, str_code, flags=re.M | re.DOTALL)
         v.write_text(output_str, encoding='utf-8')
         count += 1
         print('成功修改了 {0}'.format(v.name))
@@ -163,6 +176,12 @@ def replace_code(p_code_path, p_vo_map):
 
 
 def analyze_common(p_code, p_commonBinder_path):
+    """
+    分析commonBinder.ts绑定的类型
+    :param p_code:
+    :param p_commonBinder_path:
+    :return:
+    """
     path_code = Path(p_code)
     if not path_code.exists():
         return
@@ -171,10 +190,10 @@ def analyze_common(p_code, p_commonBinder_path):
         return
     str_common = path_common.read_text(encoding='utf-8')
     cla_map = {}
-    uid_cla_map = {}
+    uid_cla_map = {}  # uid为键，类名为值
     find_list = re.findall('\((\w+)\.URL,[ *](\w+)\)', str_common)
     for v in find_list:
-        cla_map[v[0]] = True
+        cla_map[v[1]] = True
     # print(find_list)
     list_file = sorted(path_code.rglob('*.ts'))
     for v in list_file:
@@ -188,6 +207,23 @@ def analyze_common(p_code, p_commonBinder_path):
     return uid_cla_map
 
 
-run(gui_path, code_path, xml_path)
-# analyze_common(code_path, commonBinder_path)
-# load_xml(xml_path)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='帮助信息')
+    parser.add_argument('--type', type=int, default=0, help='运行类型 0：参数运行 1：等待用户输入')
+    parser.add_argument('--code', type=str, default='./src', help='指向代码目录的src目录')
+    parser.add_argument('--gui', type=str, default='./fabu', help='fgui工程目录的fabu目录')
+    parser.add_argument('--xml', type=str, default='./assets', help='fgui工程目录的assets目录')
+    parser.add_argument('--pkg', type=str, default='', help='指定的包名称列表，用逗号分隔，默认为空则为输出所有包')
+    args = parser.parse_args()
+
+    pkg_list = []
+    if args.type == 1:  # 等待用户输入
+        input_pkg = input('输入你要发布的包名，多个包可用逗号分隔，不填则为输出所有包:')
+        if input_pkg:
+            pkg_list = input_pkg.split(',')
+            print(input_pkg)
+    else:  # 参数运行
+        if args.pkg:
+            pkg_list = args.pkg.split(',')
+
+    run(args.gui, args.code, args.xml, pkg_list)
