@@ -1,8 +1,10 @@
+import argparse
+import sys
+from pathlib import Path
+
 import Copy2Work
 import Copy2Work2
-import argparse
-from pathlib import Path
-import sys
+import DefaultTool
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='帮助信息')
@@ -54,3 +56,4 @@ if __name__ == '__main__':
 
     Copy2Work.run(str(path_fgui / 'fabu'), str(path_code / 'resource' / 'UI'), pkg_list)
     Copy2Work2.run(str(path_fgui / 'fabu'), str(path_code / 'src'), str(path_fgui / 'assets'), pkg_list)
+    DefaultTool.run(str(path_code))

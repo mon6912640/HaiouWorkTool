@@ -1,7 +1,8 @@
 from pathlib import Path
 import json
 
-work_path = 'D:/work_haiou/branch/sanguo_wechat'
+
+# work_path = 'D:/work_haiou/branch/sanguo_wechat'
 
 
 def run(p_work):
@@ -56,6 +57,3 @@ def run(p_work):
         str_result = str_result.replace('    ', '\t')  # 把四个空格转换成\t
         path_default.write_text(str_result)
         print('default.res.json文件新增了资源并成功添加')
-
-
-run(work_path)
