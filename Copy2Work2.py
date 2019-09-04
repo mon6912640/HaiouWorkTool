@@ -58,35 +58,36 @@ def run(p_gui, p_code, p_xml, p_pkg_list=None):
     uid_map = load_xml(str(path_xml))
     vo_map = {}
     for v in path_gui.iterdir():
-        if v.is_dir():
-            pkg = v.name
-            if not is_all and pkg not in p_pkg_list:
+        if not v.is_dir():
+            continue
+        pkg = v.name
+        if not is_all and pkg not in p_pkg_list:
+            continue
+        for child in v.iterdir():
+            if not child.is_file():
                 continue
-            for child in v.iterdir():
-                if not child.is_file():
-                    continue
-                if 'Binder.ts' in child.name:
-                    continue
-                str_gui = child.read_text(encoding='utf-8')
-                cla_name = child.name.split('.')[0]
-                url_match = re.search('static URL.+"(ui://\S+)"', string=str_gui)
-                if url_match is not None:
-                    key = url_match.group(1)
-                    items = re.finditer('public (\w+):([\w\.]+);', str_gui, flags=re.M)
-                    pro_vo_list = []
-                    for m in items:
-                        pro_name = m.group(1)
-                        if not pro_name:  # 兼容fgui的bug，空字符串名字也给导出
-                            continue
-                        pro_vo = ProVo(m.group(1), m.group(2), m.group(0))
-                        pro_vo_list.append(pro_vo)
-                        uid_key = '{0}.{1}.{2}'.format(pkg, cla_name, pro_name)
-                        # print(uid_key)
-                        if uid_key in uid_map:
-                            pro_vo.type_uid = uid_map[uid_key]
-                    if len(pro_vo_list) > 0:
-                        vo = DataVo(key, p_name=child.name, p_pkg=pkg, p_pro_list=pro_vo_list)
-                        vo_map[key] = vo
+            if 'Binder.ts' in child.name:
+                continue
+            str_gui = child.read_text(encoding='utf-8')
+            cla_name = child.name.split('.')[0]
+            url_match = re.search('static URL.+"(ui://\S+)"', string=str_gui)
+            if url_match is not None:
+                key = url_match.group(1)
+                items = re.finditer('public (\w+):([\w\.]+);', str_gui, flags=re.M)
+                pro_vo_list = []
+                for m in items:
+                    pro_name = m.group(1)
+                    if not pro_name:  # 兼容fgui的bug，空字符串名字也给导出
+                        continue
+                    pro_vo = ProVo(m.group(1), m.group(2), m.group(0))
+                    pro_vo_list.append(pro_vo)
+                    uid_key = '{0}.{1}.{2}'.format(pkg, cla_name, pro_name)
+                    # print(uid_key)
+                    if uid_key in uid_map:
+                        pro_vo.type_uid = uid_map[uid_key]
+                if len(pro_vo_list) > 0:
+                    vo = DataVo(key, p_name=child.name, p_pkg=pkg, p_pro_list=pro_vo_list)
+                    vo_map[key] = vo
     if len(vo_map) > 0:
         replace_code(p_code, vo_map)
 
@@ -99,11 +100,11 @@ def load_xml(p_xml):
     """
     path_xml = Path(p_xml)
     uid_map = {}
-    for dir in path_xml.iterdir():
-        if not dir.is_dir():
+    for pdir in path_xml.iterdir():
+        if not pdir.is_dir():
             continue
-        pkg = dir.name  # 包名
-        list_file = sorted(dir.rglob('*.xml'))
+        pkg = pdir.name  # 包名
+        list_file = sorted(pdir.rglob('*.xml'))
         for v in list_file:
             if v.name == 'package.xml':
                 continue

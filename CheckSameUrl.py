@@ -21,7 +21,7 @@ class KeyVo():
         self.count += 1
 
 
-dir_path = 'D:/work_haiou/branch/sanguo_wechat/src'
+dir_path = 'D:/work_haiou/branch/sanguo_wechat/src/game'
 
 
 def run(p_dir):

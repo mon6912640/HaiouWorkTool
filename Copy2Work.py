@@ -96,4 +96,4 @@ if __name__ == '__main__':
         if args.pkg:
             pkg_list = args.pkg.split(',')
 
-    run(args.source, args.to, pkg_list)
+    # run(args.source, args.to, pkg_list)
