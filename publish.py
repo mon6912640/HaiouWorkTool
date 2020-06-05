@@ -1,9 +1,11 @@
 import argparse
 import sys
+import json
 from pathlib import Path
 
 import Copy2Work
 import Copy2Work2
+import FGUICodeTool
 import DefaultTool
 
 if __name__ == '__main__':
@@ -39,10 +41,21 @@ if __name__ == '__main__':
         print('fgui工程目录不存在')
         sys.exit()
 
-    file_fgui = path_fgui / 'sanguoUI.fairy'
-    if not file_fgui.exists():
+    f_list = sorted(path_fgui.glob('*.fairy'))
+    if len(f_list) < 1:
         print('指定的fgui工程目录错误')
         sys.exit()
+
+    # 读取fgui工程的配置，读取图集发布目录和代码发布目录
+    publish_json = (path_fgui / 'settings' / 'Publish.json').read_text(encoding='utf-8')
+    obj_publish = json.loads(publish_json)
+    path_bin_output = Path(obj_publish['path'])
+    path_code_output = Path(obj_publish['codeGeneration']['codePath'])
+    class_name_prefix = obj_publish['codeGeneration']['classNamePrefix']
+    if not path_bin_output.is_absolute():
+        path_bin_output = path_fgui / path_bin_output
+    if not path_code_output.is_absolute():
+        path_code_output = path_fgui / path_code_output
 
     pkg_list = []
     if args.type == 1:  # 等待用户输入
@@ -54,6 +67,11 @@ if __name__ == '__main__':
         if args.pkg:
             pkg_list = args.pkg.split(',')
 
-    Copy2Work.run(str(path_fgui / 'fabu'), str(path_code / 'resource' / 'UI'), pkg_list)
-    Copy2Work2.run(str(path_fgui / 'fabu'), str(path_code / 'src'), str(path_fgui / 'assets'), pkg_list)
-    DefaultTool.run(str(path_code))
+    # Copy2Work.run(str(path_bin_output), str(path_code / 'resource' / 'UI'), pkg_list)
+    # print(str(path_code_output))
+    path_code_target = path_code / 'src' / 'game' / 'uicode'
+    # print(str(path_code_target))
+    FGUICodeTool.export(str(path_code_output), str(path_code_target), pkg_list)
+    Copy2Work2.run(str(path_code_output), str(path_code_target), str(path_fgui / 'assets'), class_name_prefix,
+                   pkg_list)
+    # DefaultTool.run(str(path_code))

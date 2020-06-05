@@ -39,11 +39,15 @@ gui_path = 'D:/work_haiou/client/sanguoUI/fabu'
 xml_path = 'D:/work_haiou/client/sanguoUI/assets'
 # commonBinder.ts相对于src的相对路径
 commonBinder_path = 'game/Module/common/commonBinder.ts'
+# 导出的类名前缀
+class_prefix = ''
 
 
-def run(p_gui, p_code, p_xml, p_pkg_list=None):
+def run(p_gui, p_code, p_xml, p_class_prefix, p_pkg_list=None):
     path_gui = Path(p_gui)
     path_xml = Path(p_xml)
+    global class_prefix
+    class_prefix = p_class_prefix
     if not path_gui.exists():
         print('指定目录不存在，程序退出')
         return
@@ -108,7 +112,7 @@ def load_xml(p_xml):
         for v in list_file:
             if v.name == 'package.xml':
                 continue
-            cla_name = v.name.split('.')[0]  # 类名
+            cla_name = class_prefix + v.name.split('.')[0]  # 类名
             # print(cla_name)
             xml_vo = parse(str(v))
             name_map = {}
@@ -142,7 +146,12 @@ def replace_code(p_code_path, p_vo_map):
     :return:
     """
     path_code = Path(p_code_path)
-    uid_cla_map = analyze_common(p_code_path, commonBinder_path)
+    find_common_binder = sorted(path_code.rglob('commonBinder.ts'))
+    if len(find_common_binder) > 0:
+        p_common = find_common_binder[0]
+    else:
+        p_common = path_code / commonBinder_path
+    uid_cla_map = analyze_common(p_code_path, p_common)
     list_file = sorted(path_code.rglob('*.ts'))
     count = 0
     for v in list_file:
@@ -165,6 +174,9 @@ def replace_code(p_code_path, p_vo_map):
                 # 分析代码中的commonBinder.ts，把属性的类替换成具体映射的类，避免手动对类定义作二次修改
                 if pro_vo.type_uid and pro_vo.type_uid in uid_cla_map:
                     str_type = uid_cla_map[pro_vo.type_uid]
+                    # if vo.pkg != 'common':
+                    #     str_type = 'common.' + str_type
+                    # print(str_type)
                 result += '\t' + 'public {0}: {1};'.format(pro_vo.pro, str_type) + '\n'
             result = m.group(1) + '\n' + result + '\t' + m.group(3)
             return result.rstrip('\n')
@@ -186,7 +198,7 @@ def analyze_common(p_code, p_commonBinder_path):
     path_code = Path(p_code)
     if not path_code.exists():
         return
-    path_common = path_code / p_commonBinder_path
+    path_common = p_commonBinder_path
     if not path_common.exists():
         return
     str_common = path_common.read_text(encoding='utf-8')
@@ -205,6 +217,7 @@ def analyze_common(p_code, p_commonBinder_path):
                 continue
             uid = result.group(1)
             uid_cla_map[uid] = cla_name
+    # print(uid_cla_map)
     return uid_cla_map
 
 
@@ -217,6 +230,7 @@ if __name__ == '__main__':
     parser.add_argument('--pkg', type=str, default='', help='指定的包名称列表，用逗号分隔，默认为空则为输出所有包')
     args = parser.parse_args()
 
+    print('---- 运行写入属性类型的脚本')
     pkg_list = []
     if args.type == 1:  # 等待用户输入
         input_pkg = input('输入你要发布的包名，多个包可用逗号分隔，不填则为输出所有包:')

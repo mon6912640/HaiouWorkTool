@@ -1,5 +1,7 @@
-from pathlib import Path
+import argparse
 import json
+import sys
+from pathlib import Path
 
 """
 自动修改default.res.json文件的脚本
@@ -25,6 +27,8 @@ def run(p_work, p_clean=True):
     if not path_default.exists():
         print('default.res.json不存在，程序退出')
         return
+
+    print('找到资源路径 = ' + str(path_res.resolve()))
 
     list_all = []
 
@@ -68,37 +72,87 @@ def run(p_work, p_clean=True):
 
         list_all = list_all + obj_login['resources']
 
-    obj_map = {}
+    # 读取预加载组的数据
+    obj_preload = None
+    list_preload_keys = None
+    if obj_default['groups']:
+        for v in obj_default['groups']:
+            if v['name'] == 'preload':
+                obj_preload = v
+                list_preload_keys = v['keys'].split(',')
+                break
+
+    name_map = {}
     for v in list_all:
-        url = v['url']
-        if url not in obj_map:
-            obj_map[url] = 1
+        name = v['name']
+        if name not in name_map:
+            name_map[name] = 1
 
     path_ui = path_res / 'UI'
     if not path_ui.exists():
+        print(str(path_ui) + ' 不存在')
         return
     add_flag = False  # default新增标识
     list_file = sorted(path_ui.rglob('*.*'))
+    preload_change = False  # preload组有变化的标识
     for v in list_file:
         if v.suffix == '.bin' or v.suffix == '.png' or v.suffix == '.jpg':
-            url = v.relative_to(path_res).as_posix()
-            if url in obj_map:
+            name = v.name.split('.')[0]
+            if name in name_map:  # 检查是否加入default中
                 pass
             else:
+                url = v.relative_to(path_res).as_posix()
                 if v.suffix == '.png' or v.suffix == '.jpg':
                     type = 'image'
                 else:
                     type = 'bin'
-                obj = {'url': url, 'type': type, 'name': v.name.split('.')[0]}
+                obj = {'url': url, 'type': type, 'name': name}
                 obj_default['resources'].append(obj)
                 add_flag = True
+                name_map[name] = 1
+
+            # common需要加入preload组中
+            if list_preload_keys and (name == 'common' or 'common_atlas0' in name):
+                if name in list_preload_keys:
+                    pass
+                else:
+                    list_preload_keys.append(name)
+                    preload_change = True
+
     if add_flag or del_flag:
+
+        if list_preload_keys:
+            for i in range(len(list_preload_keys) - 1, -1, -1):
+                if list_preload_keys[i] not in name_map:
+                    del list_preload_keys[i]
+                    preload_change = True
+            if preload_change:
+                obj_preload['keys'] = ','.join(list_preload_keys)
+
         str_result = json.dumps(obj_default, indent=4, ensure_ascii=False)
         str_result = str_result.replace('    ', '\t')  # 把四个空格转换成\t
         path_default.write_text(str_result)
+
         if add_flag and del_flag:
             print('default.res.json文件修改成功')
         elif add_flag:
             print('default.res.json文件新增了资源并成功添加')
         else:
             print('default.res.json文件清理了无用资源')
+    else:
+        print('资源无变化，default.res.json无需修改')
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='帮助信息')
+    parser.add_argument('--path', type=str, default='', help='代码工程目录')
+
+    args = parser.parse_args()
+
+    if not args.path:
+        print('请指定代码工程目录')
+        sys.exit()
+
+    print('---- 运行修改default文件的脚本')
+    path_code = Path(args.path)
+    run(str(path_code))
