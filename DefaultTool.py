@@ -11,7 +11,7 @@ from pathlib import Path
 # work_path = 'D:/work_haiou/branch/sanguo_wechat'
 
 
-def run(p_work, p_clean=True):
+def run(p_work, p_preload=None, p_clean=True):
     """
     自动修改default.res.json文件的脚本
     :param p_work: 工作目录
@@ -103,42 +103,46 @@ def run(p_work, p_clean=True):
             else:
                 url = v.relative_to(path_res).as_posix()
                 if v.suffix == '.png' or v.suffix == '.jpg':
-                    type = 'image'
+                    obj_type = 'image'
                 else:
-                    type = 'bin'
-                obj = {'url': url, 'type': type, 'name': name}
+                    obj_type = 'bin'
+                obj = {'url': url, 'type': obj_type, 'name': name}
                 obj_default['resources'].append(obj)
                 add_flag = True
                 name_map[name] = 1
 
-            # common需要加入preload组中
-            if list_preload_keys and (name == 'common' or 'common_atlas0' in name):
+            # 需要加入preload组中的资源
+            is_in_preload = False
+            if p_preload:
+                if v.suffix == '.bin':
+                    if name in p_preload:
+                        is_in_preload = True
+                else:
+                    for pkg in p_preload:
+                        if pkg + '_atlas0' in name:
+                            is_in_preload = True
+                            break
+
+            if list_preload_keys and is_in_preload:
                 if name in list_preload_keys:
                     pass
                 else:
                     list_preload_keys.append(name)
                     preload_change = True
 
-    if add_flag or del_flag:
+    if list_preload_keys:
+        for i in range(len(list_preload_keys) - 1, -1, -1):
+            if list_preload_keys[i] not in name_map:
+                del list_preload_keys[i]
+                preload_change = True
+        if preload_change:
+            obj_preload['keys'] = ','.join(list_preload_keys)
 
-        if list_preload_keys:
-            for i in range(len(list_preload_keys) - 1, -1, -1):
-                if list_preload_keys[i] not in name_map:
-                    del list_preload_keys[i]
-                    preload_change = True
-            if preload_change:
-                obj_preload['keys'] = ','.join(list_preload_keys)
-
+    if add_flag or del_flag or preload_change:
         str_result = json.dumps(obj_default, indent=4, ensure_ascii=False)
         str_result = str_result.replace('    ', '\t')  # 把四个空格转换成\t
         path_default.write_text(str_result)
-
-        if add_flag and del_flag:
-            print('default.res.json文件修改成功')
-        elif add_flag:
-            print('default.res.json文件新增了资源并成功添加')
-        else:
-            print('default.res.json文件清理了无用资源')
+        print('default.res.json文件修改成功')
     else:
         print('资源无变化，default.res.json无需修改')
 
@@ -146,6 +150,7 @@ def run(p_work, p_clean=True):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='帮助信息')
     parser.add_argument('--path', type=str, default='', help='代码工程目录')
+    parser.add_argument('--preload', type=str, default='', help='添加进预加载的包名')
 
     args = parser.parse_args()
 
@@ -155,4 +160,7 @@ if __name__ == '__main__':
 
     print('---- 运行修改default文件的脚本')
     path_code = Path(args.path)
-    run(str(path_code))
+    preloads = []
+    if args.preload:
+        preloads = args.preload.split(',')
+    run(str(path_code), p_preload=preloads)
