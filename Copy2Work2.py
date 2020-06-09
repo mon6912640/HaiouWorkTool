@@ -178,7 +178,9 @@ def replace_code(p_code_path, p_vo_map):
                     #     str_type = 'common.' + str_type
                     # print(str_type)
                 result += '\t' + 'public {0}: {1};'.format(pro_vo.pro, str_type) + '\n'
-            result = m.group(1) + '\n' + result + '\t' + m.group(3)
+            # 把包名写入类的静态属性
+            str_pkg = 'static pkg = "{0}";'.format(vo.pkg) + '\n'
+            result = m.group(1) + '\n' + result + '\t' + str_pkg + '\t' + m.group(3)
             return result.rstrip('\n')
 
         output_str = re.sub('(//>>>>start)(.+?)(//>>>>end)', rpl_func, str_code, flags=re.M | re.DOTALL)
