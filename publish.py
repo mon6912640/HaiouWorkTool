@@ -15,6 +15,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--code', type=str, default='', help='代码工程目录')
     parser.add_argument('--fgui', type=str, default='./src', help='fgui工程目录')
+    parser.add_argument('--preload', type=str, default='', help='添加进预加载的包名')
 
     args = parser.parse_args()
 
@@ -67,11 +68,16 @@ if __name__ == '__main__':
         if args.pkg:
             pkg_list = args.pkg.split(',')
 
+    # 预加载包列表
+    preloads = []
+    if args.preload:
+        preloads = args.preload.split(',')
+
     # Copy2Work.run(str(path_bin_output), str(path_code / 'resource' / 'UI'), pkg_list)
     # print(str(path_code_output))
     path_code_target = path_code / 'src' / 'game' / 'uicode'
     # print(str(path_code_target))
     FGUICodeTool.export(str(path_code_output), str(path_code_target), pkg_list)
     Copy2Work2.run(str(path_code_output), str(path_code_target), str(path_fgui / 'assets'), class_name_prefix,
-                   pkg_list)
+                   pkg_list, preloads)
     # DefaultTool.run(str(path_code))

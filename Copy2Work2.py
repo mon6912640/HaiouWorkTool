@@ -41,9 +41,10 @@ xml_path = 'D:/work_haiou/client/sanguoUI/assets'
 commonBinder_path = 'game/Module/common/commonBinder.ts'
 # 导出的类名前缀
 class_prefix = ''
+preload_pkgs = []
 
 
-def run(p_gui, p_code, p_xml, p_class_prefix, p_pkg_list=None):
+def run(p_gui, p_code, p_xml, p_class_prefix, p_pkg_list=None, p_preload=None):
     path_gui = Path(p_gui)
     path_xml = Path(p_xml)
     global class_prefix
@@ -51,6 +52,10 @@ def run(p_gui, p_code, p_xml, p_class_prefix, p_pkg_list=None):
     if not path_gui.exists():
         print('指定目录不存在，程序退出')
         return
+
+    global preload_pkgs
+    if p_preload:
+        preload_pkgs = p_preload
 
     if p_pkg_list is None or len(p_pkg_list) == 0:
         is_all = True
@@ -145,13 +150,23 @@ def replace_code(p_code_path, p_vo_map):
     :param p_vo_map:
     :return:
     """
+    binders = []
+    for v in preload_pkgs:
+        binder_file = v + 'Binder'
+        binders.append(binder_file)
+
     path_code = Path(p_code_path)
-    find_common_binder = sorted(path_code.rglob('commonBinder.ts'))
-    if len(find_common_binder) > 0:
-        p_common = find_common_binder[0]
-    else:
-        p_common = path_code / commonBinder_path
-    uid_cla_map = analyze_common(p_code_path, p_common)
+
+    binder_paths = []
+    all_ts = sorted(path_code.rglob('*.ts'))
+    for v in all_ts:
+        if v.stem in binders:
+            binder_paths.append(v)
+
+    if len(binder_paths) == 0:
+        binder_paths.append(path_code / commonBinder_path)
+
+    uid_cla_map = analyze_common(p_code_path, binder_paths)
     list_file = sorted(path_code.rglob('*.ts'))
     count = 0
     for v in list_file:
@@ -190,25 +205,25 @@ def replace_code(p_code_path, p_vo_map):
     print('...本次运行共修改了{0}个文件'.format(count))
 
 
-def analyze_common(p_code, p_commonBinder_path):
+def analyze_common(p_code, p_binders):
     """
     分析commonBinder.ts绑定的类型
     :param p_code:
-    :param p_commonBinder_path:
+    :param p_binders:
     :return:
     """
     path_code = Path(p_code)
     if not path_code.exists():
         return
-    path_common = p_commonBinder_path
-    if not path_common.exists():
-        return
-    str_common = path_common.read_text(encoding='utf-8')
     cla_map = {}
     uid_cla_map = {}  # uid为键，类名为值
-    find_list = re.findall('\((\w+)\.URL,[ *](\w+)\)', str_common)
-    for v in find_list:
-        cla_map[v[1]] = True
+    for v in p_binders:
+        if not v.exists():
+            continue
+        str_binder = v.read_text(encoding='utf-8')
+        find_list = re.findall('\((\w+)\.URL,[ *](\w+)\)', str_binder)
+        for v1 in find_list:
+            cla_map[v1[1]] = True
     # print(find_list)
     list_file = sorted(path_code.rglob('*.ts'))
     for v in list_file:
