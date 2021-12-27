@@ -120,6 +120,7 @@ def load_xml(p_xml):
             cla_name = class_prefix + v.name.split('.')[0]  # 类名
             # print(cla_name)
             xml_vo = parse(str(v))
+            xml_vo.getroot()
             name_map = {}
             for com in xml_vo.iterfind('displayList/'):
                 com_name = com.get('name')
